@@ -45,6 +45,12 @@ struct Optional
     auto operator==(const Optional &) const -> bool = default;
 };
 
+struct Int
+{
+    int number;
+    auto operator==(const Int &) const -> bool = default;
+};
+
 }
 
 TEST(clap, single_string)
@@ -109,4 +115,19 @@ TEST(clap, optional_without_arg)
     const auto args = std::vector{"./program"};
 
     ASSERT_EQ(clap::parse<Optional>(args.size(), args.data()), expected);
+}
+
+TEST(clap, single_int)
+{
+    const auto expected = Int{.number = 42};
+    const auto args = std::vector{"./program", "--number", "42"};
+
+    ASSERT_EQ(clap::parse<Int>(args.size(), args.data()), expected);
+}
+
+TEST(clap, single_int_invalid)
+{
+    const auto args = std::vector{"./program", "--number", "hello"};
+
+    ASSERT_THROW(clap::parse<Int>(args.size(), args.data()), clap::Exception);
 }

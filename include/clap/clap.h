@@ -1,5 +1,6 @@
 #pragma once
 
+#include <charconv>
 #include <concepts>
 #include <exception>
 #include <format>
@@ -83,6 +84,34 @@ constexpr auto format_member_as_arg(std::string_view member_name) -> std::string
     return std::format("--{}", formatted);
 }
 
+template <class T>
+    requires std::same_as<T, std::string>
+constexpr auto convert_value(std::string_view value) -> T
+{
+    return T{value};
+}
+
+template <class T>
+    requires std::integral<T>
+constexpr auto convert_value(std::string_view value) -> T
+{
+    auto res = T{};
+
+    if (const auto ec = std::from_chars(value.data(), value.data() + value.size(), res); !ec)
+    {
+        throw Exception("failed to convert {} [{}]", value, std::to_underlying(ec.ec));
+    }
+
+    return res;
+}
+
+template <class T>
+    requires IsOptional<T>
+constexpr auto convert_value(std::string_view value) -> T::value_type
+{
+    return convert_value<typename T::value_type>(value);
+}
+
 }
 
 template <class T>
@@ -104,7 +133,7 @@ constexpr auto parse(int argc, char const *const *argv) -> T //
         try
         {
             const auto arg = impl::find_arg(args, arg_str);
-            res.[:member:] = arg;
+            res.[:member:] = impl::convert_value<MemberType>(arg);
         }
         catch (Exception &)
         {
