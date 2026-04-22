@@ -27,6 +27,7 @@ target_compile_options(unit_tests PRIVATE
   -Wvarargs
   -Wvla
   -Wwrite-strings
+  -Wno-missing-declarations
 )
 
 target_link_libraries(unit_tests gmock_main clap::clap)
