@@ -1,5 +1,6 @@
 #pragma once
 
+#include <exception>
 #include <format>
 #include <meta>
 #include <ranges>
@@ -28,7 +29,7 @@ namespace impl
 {
 
 constexpr auto convert_raw_args(const int argc, char const *const *argv) -> std::vector<std::string_view> //
-    pre(argc > 1)                                                                                         //
+    pre(argc > 0)                                                                                         //
     post(r : std::ranges::size(r) == argc - 1zu)
 {
     return std::span{argv, argv + argc} |                                                 //
@@ -83,7 +84,7 @@ constexpr auto format_member_as_arg(std::string_view member_name) -> std::string
 template <class T>
     requires std::is_default_constructible_v<T>
 constexpr auto parse(int argc, char const *const *argv) -> T //
-    pre(argc > 1)
+    pre(argc > 0)
 {
     auto args = impl::convert_raw_args(argc, argv);
     constexpr auto ctx = std::meta::access_context::current();
@@ -93,8 +94,19 @@ constexpr auto parse(int argc, char const *const *argv) -> T //
     template for (constexpr auto member : std::define_static_array(std::meta::nonstatic_data_members_of(^^T, ctx)))
     {
         const auto arg_str = impl::format_member_as_arg(std::meta::identifier_of(member));
-        const auto arg = impl::find_arg(args, arg_str);
-        res.[:member:] = arg;
+
+        try
+        {
+            const auto arg = impl::find_arg(args, arg_str);
+            res.[:member:] = arg;
+        }
+        catch (Exception &)
+        {
+            if constexpr (!std::meta::has_default_member_initializer(member))
+            {
+                throw;
+            }
+        }
     }
 
     return res;

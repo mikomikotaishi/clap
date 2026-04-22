@@ -32,6 +32,12 @@ struct Kebab
     auto operator==(const Kebab &) const -> bool = default;
 };
 
+struct Default
+{
+    std::string colour = "red";
+    auto operator==(const Default &) const -> bool = default;
+};
+
 }
 
 TEST(clap, single_string)
@@ -64,4 +70,20 @@ TEST(clap, kebab_case)
     const auto args = std::vector{"./program", "--snake-case", "1", "--camel-case", "2", "--pascal-case", "3"};
 
     ASSERT_EQ(clap::parse<Kebab>(args.size(), args.data()), expected);
+}
+
+TEST(clap, default_with_arg)
+{
+    const auto expected = Default{.colour = "blue"};
+    const auto args = std::vector{"./program", "--colour", "blue"};
+
+    ASSERT_EQ(clap::parse<Default>(args.size(), args.data()), expected);
+}
+
+TEST(clap, default_without_arg)
+{
+    const auto expected = Default{};
+    const auto args = std::vector{"./program"};
+
+    ASSERT_EQ(clap::parse<Default>(args.size(), args.data()), expected);
 }
