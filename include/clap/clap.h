@@ -1,5 +1,6 @@
 #pragma once
 
+#include <concepts>
 #include <exception>
 #include <format>
 #include <meta>
@@ -27,6 +28,9 @@ class Exception : public std::runtime_error
 
 namespace impl
 {
+
+template <class T>
+concept IsOptional = std::same_as<T, std::optional<std::ranges::range_value_t<T>>>;
 
 constexpr auto convert_raw_args(const int argc, char const *const *argv) -> std::vector<std::string_view> //
     pre(argc > 0)                                                                                         //
@@ -93,6 +97,8 @@ constexpr auto parse(int argc, char const *const *argv) -> T //
 
     template for (constexpr auto member : std::define_static_array(std::meta::nonstatic_data_members_of(^^T, ctx)))
     {
+        using MemberType = typename[:std::meta::type_of(member):];
+
         const auto arg_str = impl::format_member_as_arg(std::meta::identifier_of(member));
 
         try
@@ -102,7 +108,7 @@ constexpr auto parse(int argc, char const *const *argv) -> T //
         }
         catch (Exception &)
         {
-            if constexpr (!std::meta::has_default_member_initializer(member))
+            if constexpr (!std::meta::has_default_member_initializer(member) && !impl::IsOptional<MemberType>)
             {
                 throw;
             }

@@ -1,5 +1,6 @@
 #include <contracts>
 #include <iostream>
+#include <optional>
 #include <print>
 #include <stacktrace>
 #include <string>
@@ -36,6 +37,12 @@ struct Default
 {
     std::string colour = "red";
     auto operator==(const Default &) const -> bool = default;
+};
+
+struct Optional
+{
+    std::optional<std::string> colour;
+    auto operator==(const Optional &) const -> bool = default;
 };
 
 }
@@ -86,4 +93,20 @@ TEST(clap, default_without_arg)
     const auto args = std::vector{"./program"};
 
     ASSERT_EQ(clap::parse<Default>(args.size(), args.data()), expected);
+}
+
+TEST(clap, optional_with_arg)
+{
+    const auto expected = Optional{.colour = "green"};
+    const auto args = std::vector{"./program", "--colour", "green"};
+
+    ASSERT_EQ(clap::parse<Optional>(args.size(), args.data()), expected);
+}
+
+TEST(clap, optional_without_arg)
+{
+    const auto expected = Optional{.colour = std::nullopt};
+    const auto args = std::vector{"./program"};
+
+    ASSERT_EQ(clap::parse<Optional>(args.size(), args.data()), expected);
 }
