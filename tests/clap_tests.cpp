@@ -58,6 +58,12 @@ struct Bool
     auto operator==(const Bool &) const -> bool = default;
 };
 
+struct ShortName
+{
+    [[= clap::ShortName<'n'>{}]] int number;
+    auto operator==(const ShortName &) const -> bool = default;
+};
+
 }
 
 TEST(clap, single_string)
@@ -159,4 +165,30 @@ TEST(clap, single_bool_missing)
     const auto args = std::vector{"./program"};
 
     ASSERT_EQ(clap::parse<Bool>(args.size(), args.data()), expected);
+}
+
+TEST(clap, short_name)
+{
+    const auto expected = ShortName{.number = 42};
+    const auto args = std::vector{"./program", "-n", "42"};
+
+    ASSERT_EQ(clap::parse<ShortName>(args.size(), args.data()), expected);
+}
+
+TEST(clap, short_name_missing)
+{
+    const auto args = std::vector{"./program"};
+
+    ASSERT_THAT(
+        [&] { clap::parse<ShortName>(args.size(), args.data()); },
+        ::testing::ThrowsMessage<clap::Exception>(::testing::Eq("missing arg: -n")));
+}
+
+TEST(clap, short_name_and_long_name)
+{
+    const auto args = std::vector{"./program", "-n", "42", "--number", "42"};
+
+    ASSERT_THAT(
+        [&] { clap::parse<ShortName>(args.size(), args.data()); },
+        ::testing::ThrowsMessage<clap::Exception>(::testing::Eq("cannot have both -n --number in args")));
 }

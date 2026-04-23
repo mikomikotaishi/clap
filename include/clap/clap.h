@@ -7,6 +7,7 @@
 #include <iterator>
 #include <meta>
 #include <optional>
+#include <pthread.h>
 #include <ranges>
 #include <span>
 #include <stdexcept>
@@ -82,6 +83,11 @@ constexpr auto format_member_as_arg(const std::string_view member_name) -> std::
     return std::format("--{}", formatted);
 }
 
+consteval auto format_short_name(std::meta::info) -> std::string_view
+{
+    return {};
+}
+
 template <class T>
     requires std::same_as<T, std::string>
 constexpr auto convert_value(const std::string_view value) -> T //
@@ -114,7 +120,19 @@ constexpr auto convert_value(const std::string_view value) -> T::value_type //
     return convert_value<typename T::value_type>(value);
 }
 
+template <class T>
+struct DebugType;
+
 }
+
+template <char S>
+struct ShortName
+{
+    constexpr static auto letter = S;
+};
+
+template <class T>
+concept IsShortName = std::same_as<std::remove_cvref_t<T>, ShortName<T::letter>>;
 
 template <class T>
     requires std::is_default_constructible_v<T>
@@ -130,7 +148,42 @@ constexpr auto parse(int argc, char const *const *argv) -> T //
     {
         using MemberType = typename[:std::meta::type_of(member):];
 
-        const auto arg_str = impl::format_member_as_arg(std::meta::identifier_of(member));
+        auto arg_str_short = std::optional<std::string>{};
+
+        template for (constexpr auto annotation : std::define_static_array(std::meta::annotations_of(member)))
+        {
+            using AnnotationType = typename[:std::meta::type_of(annotation):];
+
+            if constexpr (IsShortName<AnnotationType>)
+            {
+                constexpr auto letter = AnnotationType::letter;
+
+                if (!!arg_str_short)
+                {
+                    throw Exception("cannot have multiple ShortName annotations");
+                }
+
+                arg_str_short = std::format("-{}", letter);
+            }
+        }
+
+        const auto arg_str_short_index =
+            arg_str_short.and_then([&](const auto &str) { return impl::try_find_arg_index(args, str); });
+
+        const auto arg_str_long = impl::format_member_as_arg(std::meta::identifier_of(member));
+        const auto arg_str_long_index = impl::try_find_arg_index(args, arg_str_long);
+
+        if (!!arg_str_short_index && !!arg_str_long_index)
+        {
+            throw Exception("cannot have both {} {} in args", args[*arg_str_short_index], args[*arg_str_long_index]);
+        }
+
+        if (!!arg_str_short && !arg_str_short_index)
+        {
+            throw Exception("missing arg: {}", *arg_str_short);
+        }
+
+        const auto arg_str = arg_str_short_index ? std::string{args[*arg_str_short_index]} : arg_str_long;
 
         if constexpr (std::same_as<MemberType, bool>)
         {
