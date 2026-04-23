@@ -37,6 +37,7 @@ concept IsOptional = std::same_as<T, std::optional<std::ranges::range_value_t<T>
 
 constexpr auto convert_raw_args(const int argc, char const *const *argv) -> std::vector<std::string_view> //
     pre(argc > 0)                                                                                         //
+    pre(argv != nullptr)                                                                                  //
     post(r : std::ranges::size(r) == argc - 1zu)
 {
     return std::span{argv, argv + argc} |                                                 //
@@ -45,8 +46,9 @@ constexpr auto convert_raw_args(const int argc, char const *const *argv) -> std:
            std::ranges::to<std::vector>();
 }
 
-constexpr auto try_find_arg_index(std::span<const std::string_view> args, std::string_view arg)
-    -> std::optional<std::size_t>
+constexpr auto try_find_arg_index(const std::span<const std::string_view> args, const std::string_view arg)
+    -> std::optional<std::size_t> //
+    pre(!std::ranges::empty(arg))
 {
     const auto arg_iter = std::ranges::find(args, arg);
     return arg_iter == std::ranges::cend(args)
@@ -54,7 +56,8 @@ constexpr auto try_find_arg_index(std::span<const std::string_view> args, std::s
                : std::make_optional(std::ranges::distance(std::ranges::cbegin(args), arg_iter));
 }
 
-constexpr auto format_member_as_arg(std::string_view member_name) -> std::string
+constexpr auto format_member_as_arg(const std::string_view member_name) -> std::string //
+    pre(!std::ranges::empty(member_name))
 {
     auto formatted = std::string{};
 
@@ -81,14 +84,17 @@ constexpr auto format_member_as_arg(std::string_view member_name) -> std::string
 
 template <class T>
     requires std::same_as<T, std::string>
-constexpr auto convert_value(std::string_view value) -> T
+constexpr auto convert_value(const std::string_view value) -> T //
+    pre(!std::ranges::empty(value))                             //
+    post(r : std::ranges::size(value) == std::ranges::size(r))
 {
     return T{value};
 }
 
 template <class T>
     requires(std::integral<T> && !std::same_as<T, bool>)
-constexpr auto convert_value(std::string_view value) -> T
+constexpr auto convert_value(const std::string_view value) -> T //
+    pre(!std::ranges::empty(value))
 {
     auto res = T{};
 
@@ -102,7 +108,8 @@ constexpr auto convert_value(std::string_view value) -> T
 
 template <class T>
     requires IsOptional<T>
-constexpr auto convert_value(std::string_view value) -> T::value_type
+constexpr auto convert_value(const std::string_view value) -> T::value_type //
+    pre(!std::ranges::empty(value))
 {
     return convert_value<typename T::value_type>(value);
 }
