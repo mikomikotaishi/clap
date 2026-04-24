@@ -118,7 +118,7 @@ struct Args
 {
     std::string snake_case;
     std::string camelCase;
-    std::string pascalCase;
+    std::string PascalCase;
 };
 
 // ./program --snake-case a --camel-case b --pascal-case c

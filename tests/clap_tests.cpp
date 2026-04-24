@@ -54,7 +54,7 @@ struct Kebab
 {
     std::string snake_case;
     std::string camelCase;
-    std::string pascalCase;
+    std::string PascalCase;
 
     auto operator==(const Kebab &) const -> bool = default;
 };
@@ -171,7 +171,7 @@ TEST(clap, missing_arg_value)
 
 TEST(clap, kebab_case)
 {
-    const auto expected = Kebab{.snake_case = "1", .camelCase = "2", .pascalCase = "3"};
+    const auto expected = Kebab{.snake_case = "1", .camelCase = "2", .PascalCase = "3"};
     const auto args = std::vector{"./program", "--snake-case", "1", "--camel-case", "2", "--pascal-case", "3"};
 
     ASSERT_EQ(clap::parse<Kebab>(args.size(), args.data()), expected);

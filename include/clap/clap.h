@@ -95,7 +95,10 @@ constexpr auto format_member_as_arg(const std::string_view member_name) -> std::
 
         if (chr >= 'A' && chr <= 'Z')
         {
-            formatted += '-';
+            if (!std::ranges::empty(formatted))
+            {
+                formatted += '-';
+            }
             formatted += chr + 32;
             continue;
         }
