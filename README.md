@@ -2,6 +2,8 @@
 
 A modern C++26 tool for parsing command line arguments using reflection
 
+**works with gcc trunk**
+
 ### Basic usage
 
 ```cpp
